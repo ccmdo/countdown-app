@@ -3,7 +3,7 @@ port module Main exposing (audioEnded, audioStarted, main, pauseMusic, playMusic
 import Browser
 import Game.Constants
 import Html exposing (Html, audio, button, div, h1, h2, hr, img, span, text)
-import Html.Attributes exposing (attribute, class, classList, controls, disabled, src, style)
+import Html.Attributes exposing (attribute, class, classList, disabled, src, style)
 import Html.Events exposing (onClick)
 import List.Extra
 import Random
@@ -247,7 +247,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ audio [ src "http://localhost:3000/music.mp3", controls False ] []
+        [ audio [ src "%PUBLIC_URL%/music.mp3" ] []
         , h1 [ class "text-center" ] [ text "Countdown" ]
         , renderRound model.currentRound
         , div [ class "btn-group fixed-bottom d-flex justify-content-center", attribute "role" "group" ]
@@ -263,7 +263,7 @@ view model =
                 , onClick ClickedPlayMusic
                 , disabled (not (isRoundReady model.currentRound) || model.music == Playing)
                 ]
-                [ img [ style "max-height" "64px", src "http://localhost:3000/clock-regular.png" ] []
+                [ img [ style "max-height" "64px", src "%PUBLIC_URL%/clock-regular.png" ] []
                 ]
             , button [ class "btn btn-warning w-100 py-5", onClick NextRound, disabled (List.isEmpty model.nextRounds || model.music /= Stopped) ]
                 [ div [ class "d-flex justify-content-around" ]

@@ -3,7 +3,7 @@ module Main exposing (main)
 import Browser
 import Game.Constants
 import Html exposing (Html, button, div, h1, h2, hr, nav, span, text)
-import Html.Attributes exposing (attribute, class, disabled)
+import Html.Attributes exposing (attribute, class, disabled, style)
 import Html.Events exposing (onClick)
 import List.Extra
 import Random
@@ -23,7 +23,7 @@ type Round
 
 type RoundType
     = LettersGame (List String)
-    | NumbersGame (List Int)
+    | NumbersGame (List Int) (Maybe Int)
     | Conundrum (List String)
 
 
@@ -36,6 +36,7 @@ type Msg
     | ClickedChooseSmallNumber
     | NewLetter ( Maybe String, List String )
     | NewNumber ( Maybe Int, List Int )
+    | NewTarget Int
 
 
 init : () -> ( Model, Cmd Msg )
@@ -44,7 +45,7 @@ init _ =
       , currentRound = Round (LettersGame [])
       , nextRounds =
             [ Round (LettersGame [])
-            , Round (NumbersGame [])
+            , Round (NumbersGame [] Nothing)
             , Round (LettersGame [])
             , Round (Conundrum [ "p", "o", "l", "k", "i", "f", "o", "i", "l" ])
             ]
@@ -114,7 +115,7 @@ update msg model =
 
         ClickedChooseLargeNumber ->
             case model.currentRound of
-                Round (NumbersGame numbers) ->
+                Round (NumbersGame numbers _) ->
                     let
                         remainingNumbers =
                             removeAll numbers Game.Constants.largeNumbers
@@ -126,7 +127,7 @@ update msg model =
 
         ClickedChooseSmallNumber ->
             case model.currentRound of
-                Round (NumbersGame numbers) ->
+                Round (NumbersGame numbers _) ->
                     let
                         remainingNumbers =
                             removeAll numbers Game.Constants.smallNumbers
@@ -157,17 +158,32 @@ update msg model =
             case maybeNumber of
                 Just number ->
                     case model.currentRound of
-                        Round (NumbersGame numbers) ->
+                        Round (NumbersGame numbers target) ->
                             let
                                 newNumbers =
                                     numbers ++ [ number ]
+
+                                cmd =
+                                    if List.length newNumbers == Game.Constants.numberLimit then
+                                        Random.generate NewTarget (Random.int 100 999)
+
+                                    else
+                                        Cmd.none
                             in
-                            ( { model | currentRound = Round (NumbersGame newNumbers) }, Cmd.none )
+                            ( { model | currentRound = Round (NumbersGame newNumbers target) }, cmd )
 
                         _ ->
                             ( model, Cmd.none )
 
                 Nothing ->
+                    ( model, Cmd.none )
+
+        NewTarget target ->
+            case model.currentRound of
+                Round (NumbersGame numbers _) ->
+                    ( { model | currentRound = Round (NumbersGame numbers (Just target)) }, Cmd.none )
+
+                _ ->
                     ( model, Cmd.none )
 
 
@@ -178,21 +194,31 @@ view model =
           h1 [ class "text-center" ] [ text "Countdown" ]
         , renderRound model.currentRound
         , div [ class "btn-group fixed-bottom d-flex justify-content-center", attribute "role" "group" ]
-            [ button [ class "btn btn-warning w-100 py-5", onClick PreviousRound, disabled (List.isEmpty model.previousRounds) ] [ text "Previous round" ]
-            , button [ class "btn btn-warning w-100 py-5", onClick NextRound, disabled (List.isEmpty model.nextRounds) ] [ text "Next round" ]
+            [ button [ class "btn btn-warning w-100 py-5", onClick PreviousRound, disabled (List.isEmpty model.previousRounds) ]
+                [ div [ class "d-flex justify-content-around" ]
+                    [ span [ class "carousel-control-prev-icon" ] []
+                    , text "Previous round"
+                    ]
+                ]
+            , button [ class "btn btn-warning w-100 py-5", onClick NextRound, disabled (List.isEmpty model.nextRounds) ]
+                [ div [ class "d-flex justify-content-around" ]
+                    [ text "Next round"
+                    , span [ class "carousel-control-next-icon" ] []
+                    ]
+                ]
             ]
         ]
 
 
 renderRound : Round -> Html Msg
 renderRound round =
-    div [ class "jumbotron border border-dark" ]
+    div [ class "jumbotron border border-dark", style "min-height" "405px" ]
         [ case round of
             Round (LettersGame letters) ->
                 renderLettersGame letters
 
-            Round (NumbersGame numbers) ->
-                renderNumbersGame numbers
+            Round (NumbersGame numbers target) ->
+                renderNumbersGame numbers target
 
             Round (Conundrum letters) ->
                 renderConundrumGame letters
@@ -213,6 +239,7 @@ renderLettersGame letters =
         [ h2 [ class "text-center" ] [ text "Letters" ]
         , hr [ class "mb-4 w-100" ] []
         , renderLetters letters
+        , hr [ class "my-4 w-100" ] []
         , div [ class "d-flex justify-content-between", attribute "role" "group" ]
             [ button [ class "btn btn-primary w-50 mx-1 py-3", onClick ClickedGenerateVowel, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Vowel" ]
             , button [ class "btn btn-primary w-50 mx-1 py-3", onClick ClickedGenerateConsonant, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Consonant" ]
@@ -220,8 +247,8 @@ renderLettersGame letters =
         ]
 
 
-renderNumbersGame : List Int -> Html Msg
-renderNumbersGame numbers =
+renderNumbersGame : List Int -> Maybe Int -> Html Msg
+renderNumbersGame numbers target =
     -- How does the numbers round work?
     -- 20 small numbers - 2( 1 - 10)
     -- 4 large numbers (25, 50, 75, 100)
@@ -247,20 +274,32 @@ renderNumbersGame numbers =
         [ h2 [ class "text-center" ] [ text "Numbers" ]
         , hr [ class "mb-4 w-100" ] []
         , renderNumbers numbers
-        , div [ class "d-flex justify-content-between", attribute "role" "group" ]
-            [ button
-                [ class "btn btn-primary w-50 mx-1 py-3"
-                , onClick ClickedChooseLargeNumber
-                , disabled (largeNumberLimitReached || numberLimitReached)
-                ]
-                [ text "Large" ]
-            , button
-                [ class "btn btn-primary w-50 mx-1 py-3"
-                , onClick ClickedChooseSmallNumber
-                , disabled numberLimitReached
-                ]
-                [ text "Small" ]
-            ]
+        , hr [ class "my-4 w-100" ] []
+        , case target of
+            Just currentTarget ->
+                div [ class "d-flex flex-column align-items-center" ]
+                    [ div [ class "text-muted" ]
+                        [ text "Target" ]
+                    , div
+                        [ class "display-4" ]
+                        [ text (String.fromInt currentTarget) ]
+                    ]
+
+            Nothing ->
+                div [ class "d-flex justify-content-between", attribute "role" "group" ]
+                    [ button
+                        [ class "btn btn-primary w-50 mx-1 py-3"
+                        , onClick ClickedChooseLargeNumber
+                        , disabled (largeNumberLimitReached || numberLimitReached)
+                        ]
+                        [ text "Large" ]
+                    , button
+                        [ class "btn btn-primary w-50 mx-1 py-3"
+                        , onClick ClickedChooseSmallNumber
+                        , disabled numberLimitReached
+                        ]
+                        [ text "Small" ]
+                    ]
         ]
 
 
@@ -270,6 +309,7 @@ renderConundrumGame letters =
         [ h2 [ class "text-center" ] [ text "Conundrum" ]
         , hr [ class "mb-4 w-100" ] []
         , renderLetters letters
+        , hr [ class "my-4 w-100" ] []
         ]
 
 
@@ -287,11 +327,6 @@ renderLetters letters =
         )
 
 
-renderLetter : String -> Html Msg
-renderLetter letter =
-    span [ class "border mx-1" ] [ text letter ]
-
-
 renderNumbers : List Int -> Html Msg
 renderNumbers numbers =
     let
@@ -306,14 +341,19 @@ renderNumbers numbers =
         )
 
 
+renderLetter : String -> Html Msg
+renderLetter letter =
+    div [ class "btn btn-lg btn-link text-uppercase", disabled True ] [ text letter ]
+
+
 renderNumber : Int -> Html Msg
 renderNumber n =
-    span [ class "border mx-1" ] [ text (String.fromInt n) ]
+    div [ class "btn btn-lg btn-link", disabled True ] [ text (String.fromInt n) ]
 
 
 renderPlaceholder : Html Msg
 renderPlaceholder =
-    span [ class "border mx-1" ] [ text "-" ]
+    div [ class "btn btn-lg text-dark", disabled True ] [ text "-" ]
 
 
 removeAll : List a -> List a -> List a

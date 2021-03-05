@@ -76,7 +76,7 @@ init _ =
             , Round (LettersGame [])
             , Round
                 (Conundrum
-                    [ "p", "o", "l", "k", "i", "f", "o", "i", "l" ]
+                    [ "i", "l", "o", "l", "i", "f", "p", "o", "k" ]
                     [ "k", "l", "i", "p", "f", "o", "l", "i", "o" ]
                     False
                 )

@@ -2,7 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Game.Constants
-import Html exposing (Html, button, div, h1, text)
+import Html exposing (Html, button, div, h1, h2, span, text)
 import Html.Attributes exposing (class, disabled)
 import Html.Events exposing (onClick)
 import List.Extra
@@ -207,8 +207,9 @@ renderLettersGame letters =
     -- Update to Next round
     div []
         [ text "Letters"
-        , button [ onClick ClickedGenerateConsonant, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Consonant" ]
+        , renderLetters letters
         , button [ onClick ClickedGenerateVowel, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Vowel" ]
+        , button [ onClick ClickedGenerateConsonant, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Consonant" ]
         ]
 
 
@@ -224,33 +225,82 @@ renderNumbersGame numbers =
     -- Wait for Complete round (optional - list 1 longest 9, 8, 7, 6 letter word words found)
     -- Update to Next round
     let
-        largeNumbers =
-            List.filter ((<) 10) numbers
+        largeNumberLimitReached =
+            numbers
+                |> List.filter ((<) 10)
+                |> List.length
+                |> (<=) Game.Constants.largeNumberLimit
+
+        numberLimitReached =
+            numbers
+                |> List.length
+                |> (<=) Game.Constants.numberLimit
     in
     div []
         [ text "Numbers"
-        , button [ onClick ClickedChooseLargeNumber, disabled (List.length largeNumbers == Game.Constants.largeNumberLimit) ] [ text "Large" ]
-        , button [ onClick ClickedChooseSmallNumber, disabled (List.length numbers == Game.Constants.numberLimit) ] [ text "Small" ]
+        , renderNumbers numbers
+        , button
+            [ onClick ClickedChooseLargeNumber
+            , disabled (largeNumberLimitReached || numberLimitReached)
+            ]
+            [ text "Large" ]
+        , button
+            [ onClick ClickedChooseSmallNumber
+            , disabled numberLimitReached
+            ]
+            [ text "Small" ]
         ]
 
 
 renderConundrumGame : List String -> Html Msg
 renderConundrumGame letters =
     div []
-        [ text "Conundrum"
+        [ h2 [] [ text "Conundrum" ]
         , renderLetters letters
         ]
 
 
 renderLetters : List String -> Html Msg
 renderLetters letters =
-    div []
-        (List.map renderLetter letters)
+    let
+        placeholders =
+            List.repeat (Game.Constants.letterLimit - List.length letters) renderPlaceholder
+    in
+    div [ class "d-flex justify-content-center" ]
+        (List.concat
+            [ List.map renderLetter letters
+            , placeholders
+            ]
+        )
 
 
 renderLetter : String -> Html Msg
 renderLetter letter =
-    div [] [ text letter ]
+    span [ class "border mx-1" ] [ text letter ]
+
+
+renderNumbers : List Int -> Html Msg
+renderNumbers numbers =
+    let
+        placeholders =
+            List.repeat (Game.Constants.numberLimit - List.length numbers) renderPlaceholder
+    in
+    div [ class "d-flex justify-content-center" ]
+        (List.concat
+            [ List.map renderNumber (numbers |> List.sort |> List.reverse)
+            , placeholders
+            ]
+        )
+
+
+renderNumber : Int -> Html Msg
+renderNumber n =
+    span [ class "border mx-1" ] [ text (String.fromInt n) ]
+
+
+renderPlaceholder : Html Msg
+renderPlaceholder =
+    span [ class "border mx-1" ] [ text "-" ]
 
 
 removeAll : List a -> List a -> List a

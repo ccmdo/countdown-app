@@ -3,7 +3,7 @@ module Main exposing (main)
 import Browser
 import Game.Constants
 import Html exposing (Html, button, div, h1, h2, hr, nav, span, text)
-import Html.Attributes exposing (attribute, class, disabled, style)
+import Html.Attributes exposing (attribute, class, classList, disabled, style)
 import Html.Events exposing (onClick)
 import List.Extra
 import Random
@@ -24,7 +24,7 @@ type Round
 type RoundType
     = LettersGame (List String)
     | NumbersGame (List Int) (Maybe Int)
-    | Conundrum (List String)
+    | Conundrum (List String) (List String) Bool
 
 
 type Msg
@@ -34,6 +34,7 @@ type Msg
     | ClickedGenerateVowel
     | ClickedChooseLargeNumber
     | ClickedChooseSmallNumber
+    | ClickedRevealConundrum
     | NewLetter ( Maybe String, List String )
     | NewNumber ( Maybe Int, List Int )
     | NewTarget Int
@@ -47,7 +48,12 @@ init _ =
             [ Round (LettersGame [])
             , Round (NumbersGame [] Nothing)
             , Round (LettersGame [])
-            , Round (Conundrum [ "p", "o", "l", "k", "i", "f", "o", "i", "l" ])
+            , Round
+                (Conundrum
+                    [ "p", "o", "l", "k", "i", "f", "o", "i", "l" ]
+                    [ "k", "l", "i", "p", "f", "o", "l", "i", "o" ]
+                    False
+                )
             ]
       }
     , Cmd.none
@@ -137,6 +143,14 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        ClickedRevealConundrum ->
+            case model.currentRound of
+                Round (Conundrum letters answer False) ->
+                    ( { model | currentRound = Round (Conundrum letters answer True) }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
         NewLetter ( maybeLetter, _ ) ->
             case maybeLetter of
                 Just letter ->
@@ -220,8 +234,8 @@ renderRound round =
             Round (NumbersGame numbers target) ->
                 renderNumbersGame numbers target
 
-            Round (Conundrum letters) ->
-                renderConundrumGame letters
+            Round (Conundrum letters answer revealConundrum) ->
+                renderConundrumGame letters answer revealConundrum
         ]
 
 
@@ -303,13 +317,24 @@ renderNumbersGame numbers target =
         ]
 
 
-renderConundrumGame : List String -> Html Msg
-renderConundrumGame letters =
+renderConundrumGame : List String -> List String -> Bool -> Html Msg
+renderConundrumGame letters answer revealConundrum =
     div [ class "d-flex flex-column" ]
         [ h2 [ class "text-center" ] [ text "Conundrum" ]
         , hr [ class "mb-4 w-100" ] []
         , renderLetters letters
         , hr [ class "my-4 w-100" ] []
+        , if revealConundrum then
+            renderLetters answer
+
+          else
+            div [ class "d-flex justify-content-center" ]
+                [ button
+                    [ class "btn btn-block btn-primary w-75 py-3"
+                    , onClick ClickedRevealConundrum
+                    ]
+                    [ text "Reveal" ]
+                ]
         ]
 
 

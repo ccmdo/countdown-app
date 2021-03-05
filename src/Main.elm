@@ -99,7 +99,7 @@ update msg model =
 
                 previousRound :: remainingRounds ->
                     ( { model
-                        | previousRounds = remainingRounds
+                        | previousRounds = List.reverse remainingRounds
                         , currentRound = previousRound
                         , nextRounds = List.concat [ [ model.currentRound ], model.nextRounds ]
                       }

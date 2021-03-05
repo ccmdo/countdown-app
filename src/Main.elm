@@ -1,9 +1,9 @@
-module Main exposing (main)
+port module Main exposing (audioEnded, audioStarted, main, pauseMusic, playMusic, stopMusic)
 
 import Browser
 import Game.Constants
-import Html exposing (Html, button, div, h1, h2, hr, nav, span, text)
-import Html.Attributes exposing (attribute, class, classList, disabled, style)
+import Html exposing (Html, audio, button, div, h1, h2, hr, img, span, text)
+import Html.Attributes exposing (attribute, class, classList, controls, disabled, src, style)
 import Html.Events exposing (onClick)
 import List.Extra
 import Random
@@ -14,7 +14,14 @@ type alias Model =
     { previousRounds : List Round
     , currentRound : Round
     , nextRounds : List Round
+    , music : MusicState
     }
+
+
+type MusicState
+    = Stopped
+    | Playing
+    | Paused
 
 
 type Round
@@ -35,9 +42,28 @@ type Msg
     | ClickedChooseLargeNumber
     | ClickedChooseSmallNumber
     | ClickedRevealConundrum
+    | ClickedPlayMusic
+    | ClickedToggleMusic
     | NewLetter ( Maybe String, List String )
     | NewNumber ( Maybe Int, List Int )
     | NewTarget Int
+    | AudioStarted
+    | AudioEnded
+
+
+port playMusic : () -> Cmd msg
+
+
+port pauseMusic : () -> Cmd msg
+
+
+port stopMusic : () -> Cmd msg
+
+
+port audioStarted : (() -> msg) -> Sub msg
+
+
+port audioEnded : (() -> msg) -> Sub msg
 
 
 init : () -> ( Model, Cmd Msg )
@@ -55,6 +81,7 @@ init _ =
                     False
                 )
             ]
+      , music = Stopped
       }
     , Cmd.none
     )
@@ -63,6 +90,26 @@ init _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ClickedPlayMusic ->
+            ( model, playMusic () )
+
+        ClickedToggleMusic ->
+            case model.music of
+                Playing ->
+                    ( { model | music = Paused }, pauseMusic () )
+
+                Paused ->
+                    ( model, playMusic () )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        AudioStarted ->
+            ( { model | music = Playing }, Cmd.none )
+
+        AudioEnded ->
+            ( { model | music = Stopped }, Cmd.none )
+
         NextRound ->
             case model.nextRounds of
                 [] ->
@@ -142,7 +189,7 @@ update msg model =
         ClickedRevealConundrum ->
             case model.currentRound of
                 Round (Conundrum letters answer False) ->
-                    ( { model | currentRound = Round (Conundrum letters answer True) }, Cmd.none )
+                    ( { model | currentRound = Round (Conundrum letters answer True), music = Stopped }, stopMusic () )
 
                 _ ->
                     ( model, Cmd.none )
@@ -200,16 +247,25 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ h1 [ class "text-center" ] [ text "Countdown" ]
+        [ audio [ src "http://localhost:3000/music.mp3", controls False ] []
+        , h1 [ class "text-center" ] [ text "Countdown" ]
         , renderRound model.currentRound
         , div [ class "btn-group fixed-bottom d-flex justify-content-center", attribute "role" "group" ]
-            [ button [ class "btn btn-warning w-100 py-5", onClick PreviousRound, disabled (List.isEmpty model.previousRounds) ]
+            [ button [ class "btn btn-warning w-100 py-5", onClick PreviousRound, disabled (List.isEmpty model.previousRounds || model.music /= Stopped) ]
                 [ div [ class "d-flex justify-content-around" ]
                     [ span [ class "carousel-control-prev-icon" ] []
                     , text "Previous round"
                     ]
                 ]
-            , button [ class "btn btn-warning w-100 py-5", onClick NextRound, disabled (List.isEmpty model.nextRounds) ]
+            , button
+                [ class "btn"
+                , classList [ ( "disabled", not (isRoundReady model.currentRound) || model.music == Playing ) ]
+                , onClick ClickedPlayMusic
+                , disabled (not (isRoundReady model.currentRound) || model.music == Playing)
+                ]
+                [ img [ style "max-height" "64px", src "http://localhost:3000/clock-regular.png" ] []
+                ]
+            , button [ class "btn btn-warning w-100 py-5", onClick NextRound, disabled (List.isEmpty model.nextRounds || model.music /= Stopped) ]
                 [ div [ class "d-flex justify-content-around" ]
                     [ text "Next round"
                     , span [ class "carousel-control-next-icon" ] []
@@ -312,6 +368,7 @@ renderConundrumGame letters answer revealConundrum =
                     , onClick ClickedRevealConundrum
                     ]
                     [ text "Reveal" ]
+                , button [ class "btn btn-sm btn-link", onClick ClickedToggleMusic ] [ div [ class "text-muted" ] [ text "pause" ] ]
                 ]
         ]
 
@@ -359,6 +416,19 @@ renderPlaceholder =
     div [ class "btn btn-lg text-dark", disabled True ] [ text "-" ]
 
 
+isRoundReady : Round -> Bool
+isRoundReady round =
+    case round of
+        Round (LettersGame letters) ->
+            List.length letters == Game.Constants.letterLimit
+
+        Round (NumbersGame numbers _) ->
+            List.length numbers == Game.Constants.numberLimit
+
+        Round (Conundrum _ _ _) ->
+            True
+
+
 removeAll : List a -> List a -> List a
 removeAll inThis fromThis =
     case inThis of
@@ -372,11 +442,19 @@ removeAll inThis fromThis =
             removeAll xs (List.Extra.remove x fromThis)
 
 
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.batch
+        [ audioStarted (always AudioStarted)
+        , audioEnded (always AudioEnded)
+        ]
+
+
 main : Program () Model Msg
 main =
     Browser.element
         { init = init
         , view = view
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }

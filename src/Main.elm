@@ -2,8 +2,8 @@ module Main exposing (main)
 
 import Browser
 import Game.Constants
-import Html exposing (Html, button, div, h1, h2, span, text)
-import Html.Attributes exposing (class, disabled)
+import Html exposing (Html, button, div, h1, h2, nav, span, text)
+import Html.Attributes exposing (attribute, class, disabled)
 import Html.Events exposing (onClick)
 import List.Extra
 import Random
@@ -173,12 +173,14 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ text (Debug.toString model)
-        , h1 [] [ text "Countdown" ]
+    div [ class "container" ]
+        [ --text (Debug.toString model)
+          h1 [ class "text-center" ] [ text "Countdown" ]
         , renderRound model.currentRound
-        , button [ class "btn btn-link", onClick PreviousRound, disabled (List.isEmpty model.previousRounds) ] [ text "Previous round" ]
-        , button [ class "btn btn-link", onClick NextRound, disabled (List.isEmpty model.nextRounds) ] [ text "Next round" ]
+        , div [ class "btn-group fixed-bottom d-flex justify-content-center", attribute "role" "group" ]
+            [ button [ class "btn btn-warning w-100 py-5", onClick PreviousRound, disabled (List.isEmpty model.previousRounds) ] [ text "Previous round" ]
+            , button [ class "btn btn-warning w-100", onClick NextRound, disabled (List.isEmpty model.nextRounds) ] [ text "Next round" ]
+            ]
         ]
 
 
@@ -206,7 +208,7 @@ renderLettersGame letters =
     -- Wait for Complete round (optional - list 1 longest 9, 8, 7, 6 letter word words found)
     -- Update to Next round
     div []
-        [ text "Letters"
+        [ h2 [ class "text-center" ] [ text "Letters" ]
         , renderLetters letters
         , button [ onClick ClickedGenerateVowel, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Vowel" ]
         , button [ onClick ClickedGenerateConsonant, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Consonant" ]
@@ -237,7 +239,7 @@ renderNumbersGame numbers =
                 |> (<=) Game.Constants.numberLimit
     in
     div []
-        [ text "Numbers"
+        [ h2 [ class "text-center" ] [ text "Numbers" ]
         , renderNumbers numbers
         , button
             [ onClick ClickedChooseLargeNumber
@@ -255,7 +257,7 @@ renderNumbersGame numbers =
 renderConundrumGame : List String -> Html Msg
 renderConundrumGame letters =
     div []
-        [ h2 [] [ text "Conundrum" ]
+        [ h2 [ class "text-center" ] [ text "Conundrum" ]
         , renderLetters letters
         ]
 

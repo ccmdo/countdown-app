@@ -62,10 +62,6 @@ init _ =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        m =
-            Debug.log "msg" msg
-    in
     case msg of
         NextRound ->
             case model.nextRounds of
@@ -204,8 +200,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ --text (Debug.toString model)
-          h1 [ class "text-center" ] [ text "Countdown" ]
+        [ h1 [ class "text-center" ] [ text "Countdown" ]
         , renderRound model.currentRound
         , div [ class "btn-group fixed-bottom d-flex justify-content-center", attribute "role" "group" ]
             [ button [ class "btn btn-warning w-100 py-5", onClick PreviousRound, disabled (List.isEmpty model.previousRounds) ]
@@ -241,14 +236,6 @@ renderRound round =
 
 renderLettersGame : List String -> Html Msg
 renderLettersGame letters =
-    -- 2 buttons, generate a costonant, generate a vowel
-    -- Continue until 9 letters are generated
-    -- Then wait for start
-    -- On start, run 30 second timer
-    -- On complete timer, prompts for player guesses
-    -- Can check each on using a dictionary lookup
-    -- Wait for Complete round (optional - list 1 longest 9, 8, 7, 6 letter word words found)
-    -- Update to Next round
     div [ class "d-flex flex-column" ]
         [ h2 [ class "text-center" ] [ text "Letters" ]
         , hr [ class "mb-4 w-100" ] []
@@ -263,15 +250,6 @@ renderLettersGame letters =
 
 renderNumbersGame : List Int -> Maybe Int -> Html Msg
 renderNumbersGame numbers target =
-    -- How does the numbers round work?
-    -- 20 small numbers - 2( 1 - 10)
-    -- 4 large numbers (25, 50, 75, 100)
-    -- Generate target between 100-999 inclusive
-    -- Then wait for start
-    -- On start, run 30 second timer
-    -- On complete timer, wait
-    -- Wait for Complete round (optional - list 1 longest 9, 8, 7, 6 letter word words found)
-    -- Update to Next round
     let
         largeNumberLimitReached =
             numbers

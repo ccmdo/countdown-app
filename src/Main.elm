@@ -425,8 +425,11 @@ isRoundReady round =
         Round (NumbersGame numbers _) ->
             List.length numbers == Game.Constants.numberLimit
 
-        Round (Conundrum _ _ _) ->
+        Round (Conundrum _ _ False) ->
             True
+
+        Round (Conundrum _ _ True) ->
+            False
 
 
 removeAll : List a -> List a -> List a

@@ -2,7 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Game.Constants
-import Html exposing (Html, button, div, h1, h2, nav, span, text)
+import Html exposing (Html, button, div, h1, h2, hr, nav, span, text)
 import Html.Attributes exposing (attribute, class, disabled)
 import Html.Events exposing (onClick)
 import List.Extra
@@ -179,22 +179,24 @@ view model =
         , renderRound model.currentRound
         , div [ class "btn-group fixed-bottom d-flex justify-content-center", attribute "role" "group" ]
             [ button [ class "btn btn-warning w-100 py-5", onClick PreviousRound, disabled (List.isEmpty model.previousRounds) ] [ text "Previous round" ]
-            , button [ class "btn btn-warning w-100", onClick NextRound, disabled (List.isEmpty model.nextRounds) ] [ text "Next round" ]
+            , button [ class "btn btn-warning w-100 py-5", onClick NextRound, disabled (List.isEmpty model.nextRounds) ] [ text "Next round" ]
             ]
         ]
 
 
 renderRound : Round -> Html Msg
 renderRound round =
-    case round of
-        Round (LettersGame letters) ->
-            renderLettersGame letters
+    div [ class "jumbotron border border-dark" ]
+        [ case round of
+            Round (LettersGame letters) ->
+                renderLettersGame letters
 
-        Round (NumbersGame numbers) ->
-            renderNumbersGame numbers
+            Round (NumbersGame numbers) ->
+                renderNumbersGame numbers
 
-        Round (Conundrum letters) ->
-            renderConundrumGame letters
+            Round (Conundrum letters) ->
+                renderConundrumGame letters
+        ]
 
 
 renderLettersGame : List String -> Html Msg
@@ -207,11 +209,14 @@ renderLettersGame letters =
     -- Can check each on using a dictionary lookup
     -- Wait for Complete round (optional - list 1 longest 9, 8, 7, 6 letter word words found)
     -- Update to Next round
-    div []
+    div [ class "d-flex flex-column" ]
         [ h2 [ class "text-center" ] [ text "Letters" ]
+        , hr [ class "mb-4 w-100" ] []
         , renderLetters letters
-        , button [ onClick ClickedGenerateVowel, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Vowel" ]
-        , button [ onClick ClickedGenerateConsonant, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Consonant" ]
+        , div [ class "d-flex justify-content-between", attribute "role" "group" ]
+            [ button [ class "btn btn-primary w-50 mx-1 py-3", onClick ClickedGenerateVowel, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Vowel" ]
+            , button [ class "btn btn-primary w-50 mx-1 py-3", onClick ClickedGenerateConsonant, disabled (List.length letters == Game.Constants.letterLimit) ] [ text "Consonant" ]
+            ]
         ]
 
 
@@ -238,26 +243,32 @@ renderNumbersGame numbers =
                 |> List.length
                 |> (<=) Game.Constants.numberLimit
     in
-    div []
+    div [ class "d-flex flex-column" ]
         [ h2 [ class "text-center" ] [ text "Numbers" ]
+        , hr [ class "mb-4 w-100" ] []
         , renderNumbers numbers
-        , button
-            [ onClick ClickedChooseLargeNumber
-            , disabled (largeNumberLimitReached || numberLimitReached)
+        , div [ class "d-flex justify-content-between", attribute "role" "group" ]
+            [ button
+                [ class "btn btn-primary w-50 mx-1 py-3"
+                , onClick ClickedChooseLargeNumber
+                , disabled (largeNumberLimitReached || numberLimitReached)
+                ]
+                [ text "Large" ]
+            , button
+                [ class "btn btn-primary w-50 mx-1 py-3"
+                , onClick ClickedChooseSmallNumber
+                , disabled numberLimitReached
+                ]
+                [ text "Small" ]
             ]
-            [ text "Large" ]
-        , button
-            [ onClick ClickedChooseSmallNumber
-            , disabled numberLimitReached
-            ]
-            [ text "Small" ]
         ]
 
 
 renderConundrumGame : List String -> Html Msg
 renderConundrumGame letters =
-    div []
+    div [ class "d-flex flex-column" ]
         [ h2 [ class "text-center" ] [ text "Conundrum" ]
+        , hr [ class "mb-4 w-100" ] []
         , renderLetters letters
         ]
 

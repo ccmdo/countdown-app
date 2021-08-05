@@ -1,0 +1,24 @@
+{
+  "name": "countdown-app",
+  "version": "1.0.0",
+  "description": "Game for team socials",
+  "main": "index.js",
+  "dependencies": {
+    "elm": "^0.19.1-5",
+    "elm-format": "^0.8.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ccmdo/countdown-app.git"
+  },
+  "author": "ccmdo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ccmdo/countdown-app/issues"
+  },
+  "homepage": "https://github.com/ccmdo/countdown-app#readme"
+}
